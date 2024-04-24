@@ -11,8 +11,8 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient({ log: [ 'query' ] });
 
 const GitHubStrategy = require('passport-github2').Strategy;
-const GITHUB_CLIENT_ID = 'd1fcfb8041f6f03c8d5a';
-const GITHUB_CLIENT_SECRET = 'a62adedcc3eea4082c5afd10d4139f1fa797735f';
+const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || 'd1fcfb8041f6f03c8d5a';
+const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || 'a62adedcc3eea4082c5afd10d4139f1fa797735f';
 
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
@@ -20,7 +20,7 @@ passport.deserializeUser((obj, done) => done(null, obj));
 passport.use(new GitHubStrategy({
     clientID: GITHUB_CLIENT_ID,
     clientSecret: GITHUB_CLIENT_SECRET,
-    callbackURL: 'http://localhost:8000/auth/github/callback'
+    callbackURL: process.env.CALLBACK_URL || 'http://localhost:8000/auth/github/callback'
   },
   (accessToken, refreshToken, profile, done) => {
     process.nextTick(async () => {
