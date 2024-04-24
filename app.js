@@ -6,12 +6,13 @@ const logger = require('morgan');
 const helmet = require('helmet');
 const session = require('express-session');
 const passport = require('passport');
+const csurf = require('tiny-csrf');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient({ log: [ 'query' ] });
 
 const GitHubStrategy = require('passport-github2').Strategy;
-const GITHUB_CLIENT_ID = '2f831cb3d4aac02393aa';
-const GITHUB_CLIENT_SECRET = '9fbc340ac0175123695d2dedfbdf5a78df3b8067';
+const GITHUB_CLIENT_ID = 'd1fcfb8041f6f03c8d5a';
+const GITHUB_CLIENT_SECRET = 'a62adedcc3eea4082c5afd10d4139f1fa797735f';
 
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
@@ -58,12 +59,21 @@ app.set('view engine', 'pug');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser('nyobiko_signed_cookies'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(session({ secret: 'e55be81b307c1c09', resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
 app.use(passport.session());
+
+app.use(
+  csurf(
+    'nyobikosecretsecret9876543212345',
+    ['POST'],
+    [/.*\/(candidates|comments).*/i] 
+  )
+);
+
 
 app.use('/', indexRouter);
 app.use('/login', loginRouter);
@@ -81,7 +91,14 @@ app.get(
   '/auth/github/callback',
   passport.authenticate('github', { failureRedirect: '/login' }),
   (req, res) => {
-    res.redirect('/');
+    const loginFrom = req.cookies.loginFrom;
+    // オープンリダイレクタ脆弱性対策
+    if (loginFrom && loginFrom.startsWith('/')) {
+      res.clearCookie('loginFrom');
+      res.redirect(loginFrom);
+    } else {
+      res.redirect('/');
+    }
   }
 );
 
